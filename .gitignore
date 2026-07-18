@@ -1,0 +1,12 @@
+# runtime data — private; created on first use
+questions.json
+answers.jsonl
+.answers_cursor
+.queue.lock
+token.txt
+server.log
+*.log
+__pycache__/
+*.pyc
+.DS_Store
+*.bak*

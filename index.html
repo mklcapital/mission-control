@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Mission Control</title>
+<style>
+  :root{
+    color-scheme:light;
+    --bg:#EFF4F1; --card:#FDFEFD; --ink:#2F3531; --muted:#5C6B62;
+    --line:#D9E3DC; --terra:#B4522F; --terra-dk:#A84A2E; --teal:#2E7D78;
+    --ok:#3A7449; --ok-bg:#E7F1E9; --err:#A8402F;
+    --field-bg:#FFFFFF; --hover:rgba(194,94,63,.07); --err-bg:#F7E5DE;
+    --shadow:rgba(40,60,48,.08); --btn-ink:#FFFFFF;
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#1A211D; --card:#242C27; --ink:#E2E9E4; --muted:#96A49B;
+    --line:#38443D; --terra:#D97C5B; --terra-dk:#E08F72; --teal:#5FB3AC;
+    --ok:#7CBB8C; --ok-bg:#243428; --err:#E39177;
+    --field-bg:#1E2620; --hover:rgba(217,124,91,.12); --err-bg:#3A2620;
+    --shadow:rgba(0,0,0,.35); --btn-ink:#1A211D;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --bg:#1A211D; --card:#242C27; --ink:#E2E9E4; --muted:#96A49B;
+      --line:#38443D; --terra:#D97C5B; --terra-dk:#E08F72; --teal:#5FB3AC;
+      --ok:#7CBB8C; --ok-bg:#243428; --err:#E39177;
+      --field-bg:#1E2620; --hover:rgba(217,124,91,.12); --err-bg:#3A2620;
+      --shadow:rgba(0,0,0,.35); --btn-ink:#1A211D;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}
+  .wrap{max-width:780px;margin:0 auto;padding:26px 18px 90px;}
+  header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+    border-bottom:3px solid var(--terra);padding-bottom:10px;margin-bottom:22px;flex-wrap:wrap}
+  h1{font-size:25px;margin:0;letter-spacing:.3px}
+  h1 .dot{color:var(--terra)}
+  #status{font-size:13px;color:var(--muted)}
+  .hright{display:flex;align-items:center;gap:10px}
+  #theme-toggle{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    font:inherit;font-size:15px;line-height:1;padding:6px 10px;cursor:pointer;color:var(--ink);flex:none}
+  #theme-toggle:hover{border-color:var(--terra)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:16px 18px 14px;margin-bottom:16px;box-shadow:0 1px 3px var(--shadow)}
+  .card.done{border-color:var(--ok);background:var(--ok-bg);transition:border-color .3s,background .3s}
+  .card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .chip{font-size:11px;font-weight:700;letter-spacing:.8px;padding:3px 10px;border-radius:999px;color:#fff;flex:none}
+  .when{font-size:12px;color:var(--muted)}
+  .qtext{margin:0 0 4px;font-size:16.5px;font-weight:600;white-space:pre-wrap}
+  .ctx{margin:2px 0 8px;font-size:13.5px;color:var(--muted);font-style:italic;white-space:pre-wrap}
+  /* long unbroken tokens (URLs, paths) must wrap, never widen the page */
+  .qtext,.ctx,label.opt .lbl,.cardmsg,#err{overflow-wrap:anywhere;word-break:break-word}
+  .opts{margin:8px 0 2px}
+  label.opt{display:flex;align-items:flex-start;gap:9px;padding:7px 9px;border-radius:8px;cursor:pointer}
+  label.opt:hover{background:var(--hover)}
+  label.opt input[type=radio],label.opt input[type=checkbox]{margin-top:4px;accent-color:var(--terra);flex:none}
+  label.opt .lbl{flex:1}
+  .other-input,select,textarea{font:inherit;color:inherit;background:var(--field-bg);
+    border:1px solid var(--line);border-radius:8px;padding:12px 12px}
+  .other-input{flex:2;min-width:140px;padding:11px 11px;font-size:15px}
+  .other-input:focus,select:focus,textarea:focus{outline:2px solid var(--teal);outline-offset:0;border-color:var(--teal)}
+  select{width:100%;margin:4px 0 6px}
+  textarea{width:100%;resize:vertical}
+  .free{min-height:132px}
+  .foot{display:flex;gap:10px;align-items:flex-end;margin-top:10px;flex-wrap:wrap}
+  .notewrap{flex:1;min-width:200px}
+  .notewrap .nlbl{display:block;font-size:11px;color:var(--muted);letter-spacing:.5px;margin-bottom:3px;text-transform:uppercase}
+  .note-input{width:100%;min-height:57px;height:57px;font-size:15px}
+  button.submit{background:var(--terra);border:none;color:var(--btn-ink,#fff);font-family:inherit;font-size:15px;
+    font-weight:600;padding:11px 22px;border-radius:9px;cursor:pointer;flex:none}
+  button.submit:hover{background:var(--terra-dk)}
+  button.submit:disabled{opacity:.55;cursor:default}
+  .cardmsg{font-size:13px;color:var(--err);margin-top:6px;min-height:1em}
+  h2{font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:36px 0 12px}
+  .receipt{display:flex;gap:10px;align-items:baseline;background:var(--ok-bg);
+    border-left:4px solid var(--ok);border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:13.5px;flex-wrap:wrap}
+  .receipt .chip{font-size:10px;padding:2px 8px}
+  .receipt .rq{color:var(--muted);flex:1 1 160px;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .receipt .ra{font-weight:600;color:var(--ok);max-width:100%;overflow-wrap:anywhere}
+  .receipt .rt{font-size:11.5px;color:var(--muted)}
+  #err{background:var(--err-bg);border:1px solid var(--terra);border-radius:10px;
+    padding:13px 16px;margin-bottom:18px;display:none;font-size:14.5px}
+  .empty{color:var(--muted);font-style:italic;padding:18px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Mission Control<span class="dot">.</span></h1>
+    <div class="hright">
+      <div id="status">loading…</div>
+      <button id="theme-toggle" type="button" title="Toggle light/dark" aria-label="Toggle light/dark theme">🌙</button>
+    </div>
+  </header>
+  <div id="err"></div>
+  <div id="open"></div>
+  <div id="answered-wrap" style="display:none">
+    <h2 id="answered-h">Answered</h2>
+    <div id="answered"></div>
+  </div>
+</div>
+<script>
+'use strict';
+// --- theme (system default; manual toggle wins, persisted) ---
+(function(){
+  var root = document.documentElement;
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  var stored = null;
+  try { stored = localStorage.getItem('mc-theme'); } catch(e){}
+  if (stored === 'light' || stored === 'dark') root.setAttribute('data-theme', stored);
+  function effective(){
+    var t = root.getAttribute('data-theme');
+    return (t === 'light' || t === 'dark') ? t : (mq.matches ? 'dark' : 'light');
+  }
+  var btn = document.getElementById('theme-toggle');
+  function paint(){ btn.textContent = effective() === 'dark' ? '☀️' : '🌙'; }
+  btn.addEventListener('click', function(){
+    var next = effective() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('mc-theme', next); } catch(e){}
+    paint();
+  });
+  if (mq.addEventListener) mq.addEventListener('change', paint);
+  paint();
+})();
+
+var KEY = new URLSearchParams(location.search).get('key') || '';
+var OTHER = '__OTHER__';
+var CHIP = {ROOFING:'#B4522F', LOAN:'#2E7D78', LEGAL:'#8A567E', INFRA:'#5B7391',
+  SECURITY:'#A8402F', LTM:'#8F6820', PBX:'#5F7739', MDM:'#7C5C3F', FAB:'#9F5F22',
+  FAMILY:'#3E7C4F', TEST:'#7A6B5B'};
+
+var lastPayload = '';
+var lastOpen = 0;
+var dirty = new Set();
+var retryTimer = null;
+
+function api(path){ return path + (path.indexOf('?') >= 0 ? '&' : '?') + 'key=' + encodeURIComponent(KEY); }
+
+function chipColor(p){
+  if (CHIP[p]) return CHIP[p];
+  var h = 0, i;
+  for (i = 0; i < p.length; i++) h = ((h * 31) + p.charCodeAt(i)) >>> 0;
+  var pal = Object.keys(CHIP).map(function(k){ return CHIP[k]; });
+  return pal[h % pal.length];
+}
+
+function el(tag, attrs){
+  var n = document.createElement(tag);
+  attrs = attrs || {};
+  Object.keys(attrs).forEach(function(k){
+    if (k === 'class') n.className = attrs[k];
+    else if (k === 'style') n.style.cssText = attrs[k];
+    else n.setAttribute(k, attrs[k]);
+  });
+  for (var i = 2; i < arguments.length; i++){
+    var kid = arguments[i];
+    if (kid == null) continue;
+    n.appendChild(typeof kid === 'string' ? document.createTextNode(kid) : kid);
+  }
+  return n;
+}
+
+function makeChip(project){
+  var c = el('span', {class:'chip'}, project || '?');
+  c.style.background = chipColor(project || '?');
+  return c;
+}
+
+function showErr(msg){ var e = document.getElementById('err'); e.textContent = msg; e.style.display = 'block'; }
+function hideErr(){ document.getElementById('err').style.display = 'none'; }
+
+var lastUpdated = 0;
+function fmtAgo(ms){
+  var s = Math.round(ms / 1000);
+  if (s < 5) return 'just now';
+  if (s < 60) return s + 's ago';
+  var m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ago';
+  return Math.floor(m / 60) + 'h ' + (m % 60) + 'm ago';
+}
+function paintStatus(){
+  if (!lastUpdated) return;
+  document.getElementById('status').textContent =
+    lastOpen + ' open · updated ' + fmtAgo(Date.now() - lastUpdated);
+}
+function updateStatus(n){
+  lastOpen = n;
+  lastUpdated = Date.now();
+  paintStatus();
+}
+setInterval(paintStatus, 1000); // live heartbeat: "updated Xs ago"
+
+function buildCard(q){
+  var card = el('div', {class:'card', 'data-id': q.id});
+  card.appendChild(el('div', {class:'card-top'}, makeChip(q.project),
+    el('span', {class:'when'}, (q.created_ts || '').slice(0, 10))));
+  card.appendChild(el('p', {class:'qtext'}, q.question || ''));
+  if (q.context) card.appendChild(el('p', {class:'ctx'}, q.context));
+
+  var opts = el('div', {class:'opts'});
+  var name = 'ans-' + q.id;
+  var otherInput = null;
+
+  function addRow(type, value, labelText, extra){
+    var input = el('input', {type: type, name: name, value: value});
+    var row = el('label', {class:'opt'}, input, el('span', {class:'lbl'}, labelText));
+    if (extra) row.appendChild(extra);
+    opts.appendChild(row);
+    return input;
+  }
+  function wireOther(ctl, inp){
+    inp.addEventListener('input', function(){ if (inp.value.trim()) ctl.checked = true; });
+  }
+
+  if (q.type === 'yesno'){
+    addRow('radio', 'Yes', 'Yes');
+    addRow('radio', 'No', 'No');
+    card._collect = function(){
+      var s = card.querySelector('input[name="' + name + '"]:checked');
+      return s ? {value: s.value, other: ''} : null;
+    };
+  } else if (q.type === 'choice' || q.type === 'multi'){
+    var t = (q.type === 'multi') ? 'checkbox' : 'radio';
+    (q.options || []).forEach(function(o){ addRow(t, o, o); });
+    otherInput = el('input', {class:'other-input', type:'text', placeholder:'fill in…'});
+    var otherCtl = addRow(t, OTHER, 'Other:', otherInput);
+    wireOther(otherCtl, otherInput);
+    if (q.type === 'multi'){
+      card._collect = function(){
+        var sels = Array.prototype.slice.call(
+          card.querySelectorAll('input[name="' + name + '"]:checked'));
+        if (!sels.length) return null;
+        var vals = sels.map(function(s){ return s.value === OTHER ? 'Other' : s.value; });
+        var hasOther = sels.some(function(s){ return s.value === OTHER; });
+        if (hasOther && !otherInput.value.trim())
+          return {invalid: 'Fill in the “Other” box (or untick it).'};
+        return {value: vals.join('; '), other: hasOther ? otherInput.value.trim() : ''};
+      };
+    } else {
+      card._collect = function(){
+        var s = card.querySelector('input[name="' + name + '"]:checked');
+        if (!s) return null;
+        if (s.value === OTHER){
+          if (!otherInput.value.trim())
+            return {invalid: 'Fill in the “Other” box (or pick another option).'};
+          return {value: 'Other', other: otherInput.value.trim()};
+        }
+        return {value: s.value, other: ''};
+      };
+    }
+  } else if (q.type === 'dropdown'){
+    var sel = el('select', {}, el('option', {value:''}, '— choose —'));
+    (q.options || []).forEach(function(o){ sel.appendChild(el('option', {value: o}, o)); });
+    sel.appendChild(el('option', {value: OTHER}, 'Other…'));
+    opts.appendChild(sel);
+    otherInput = el('input', {class:'other-input', type:'text',
+      placeholder:'other — fill in…', style:'width:100%;display:none'});
+    opts.appendChild(otherInput);
+    sel.addEventListener('change', function(){
+      otherInput.style.display = (sel.value === OTHER) ? 'block' : 'none';
+      if (sel.value === OTHER) otherInput.focus();
+    });
+    card._collect = function(){
+      if (!sel.value) return null;
+      if (sel.value === OTHER){
+        if (!otherInput.value.trim())
+          return {invalid: 'Fill in the “Other” box (or pick another option).'};
+        return {value: 'Other', other: otherInput.value.trim()};
+      }
+      return {value: sel.value, other: ''};
+    };
+  } else { // text
+    var ta = el('textarea', {class:'free', placeholder:'type your answer…'});
+    opts.appendChild(ta);
+    card._collect = function(){
+      var v = ta.value.trim();
+      return v ? {value: v, other: ''} : null;
+    };
+  }
+  card.appendChild(opts);
+
+  var noteIn = el('textarea', {class:'note-input', placeholder:'optional'});
+  var btn = el('button', {class:'submit', type:'button'}, 'Submit');
+  var msgEl = el('div', {class:'cardmsg'});
+  btn.addEventListener('click', function(){ submitCard(q, card, btn, noteIn, msgEl); });
+  card.appendChild(el('div', {class:'foot'},
+    el('div', {class:'notewrap'}, el('span', {class:'nlbl'}, 'Note (optional)'), noteIn),
+    btn));
+  card.appendChild(msgEl);
+  card.addEventListener('input', function(){ dirty.add(q.id); });
+  card.addEventListener('change', function(){ dirty.add(q.id); });
+  return card;
+}
+
+function makeReceipt(project, question, summary, ts){
+  return el('div', {class:'receipt'}, makeChip(project),
+    el('span', {class:'rq'}, question || ''),
+    el('span', {class:'ra'}, '→ ' + (summary || 'answered')),
+    el('span', {class:'rt'}, (ts || '').replace('T', ' ').slice(0, 16)));
+}
+
+function submitCard(q, card, btn, noteIn, msgEl){
+  var got = card._collect();
+  if (!got){ msgEl.textContent = 'Pick or type an answer first.'; return; }
+  if (got.invalid){ msgEl.textContent = got.invalid; return; }
+  msgEl.textContent = '';
+  btn.disabled = true; btn.textContent = 'Sending…';
+  var note = noteIn.value.trim();
+  fetch(api('/api/answer'), {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({id: q.id, answer: got.value, other_text: got.other || '', note: note})
+  }).then(function(r){
+    return r.json().catch(function(){ return {}; }).then(function(j){
+      if (r.status === 409){
+        // answered from another tab/device — don't record a duplicate, sync up
+        dirty.delete(q.id);
+        btn.textContent = 'Answered elsewhere';
+        msgEl.textContent = 'Already answered from another tab or device — syncing…';
+        lastPayload = '';
+        setTimeout(function(){ refresh(false); }, 800);
+        return null;
+      }
+      if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      return j;
+    });
+  }).then(function(j){
+    if (!j) return;
+    card.classList.add('done');
+    dirty.delete(q.id);
+    lastPayload = ''; // force re-sync on next poll
+    var summary = got.value + (got.other ? ' — ' + got.other : '') + (note ? ' [note: ' + note + ']' : '');
+    setTimeout(function(){
+      // move card to answered section without clobbering other cards
+      card.parentNode && card.parentNode.removeChild(card);
+      var aw = document.getElementById('answered-wrap');
+      var ae = document.getElementById('answered');
+      aw.style.display = 'block';
+      ae.insertBefore(makeReceipt(q.project, q.question, summary, j.ts), ae.firstChild);
+      var h = document.getElementById('answered-h');
+      h.textContent = 'Answered (' + ae.children.length + ')';
+      lastOpen = Math.max(0, lastOpen - 1);
+      updateStatus(lastOpen);
+      if (lastOpen === 0 && !document.querySelector('#open .card')){
+        document.getElementById('open').appendChild(
+          el('div', {class:'empty'}, 'No open questions. Queue is clear.'));
+      }
+    }, 450);
+  }).catch(function(e){
+    msgEl.textContent = 'Failed to save: ' + e.message + ' — try again.';
+    btn.disabled = false; btn.textContent = 'Submit';
+  });
+}
+
+function render(qs){
+  var open = qs.filter(function(q){ return q.status !== 'answered'; });
+  var done = qs.filter(function(q){ return q.status === 'answered'; })
+    .sort(function(a, b){ return (b.answered_ts || '').localeCompare(a.answered_ts || ''); });
+  var openEl = document.getElementById('open');
+  // keep the live DOM node (typed text, selections) of any card being edited,
+  // so new questions can still appear while the user is mid-answer on another card
+  var keep = {};
+  Array.prototype.slice.call(openEl.querySelectorAll('.card')).forEach(function(c){
+    var id = c.getAttribute('data-id');
+    if (id && dirty.has(id)) keep[id] = c;
+  });
+  openEl.innerHTML = '';
+  if (!open.length) openEl.appendChild(el('div', {class:'empty'}, 'No open questions. Queue is clear.'));
+  open.forEach(function(q){ openEl.appendChild(keep[q.id] || buildCard(q)); });
+  // forget dirty state for cards that are no longer open
+  dirty.forEach(function(id){
+    if (!open.some(function(q){ return q.id === id; })) dirty.delete(id);
+  });
+  var aw = document.getElementById('answered-wrap');
+  var ae = document.getElementById('answered');
+  ae.innerHTML = '';
+  if (done.length){
+    aw.style.display = 'block';
+    document.getElementById('answered-h').textContent = 'Answered (' + done.length + ')';
+    done.forEach(function(q){
+      ae.appendChild(makeReceipt(q.project, q.question, q.answer_summary, q.answered_ts));
+    });
+  } else {
+    aw.style.display = 'none';
+  }
+  lastOpen = open.length;
+  updateStatus(lastOpen);
+}
+
+function refresh(force){
+  return fetch(api('/api/questions')).then(function(r){
+    if (r.status === 403){
+      showErr('Bad or missing key. Open this page with the full link including ?key=… (see token.txt next to server.py).');
+      return null;
+    }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.text();
+  }).then(function(text){
+    if (text == null) return;
+    hideErr();
+    if (!force && text === lastPayload){ updateStatus(lastOpen); return; }
+    lastPayload = text;
+    if (force) dirty.clear();
+    render(JSON.parse(text)); // dirty cards are preserved per-id inside render()
+  }).catch(function(e){
+    showErr('Can’t reach the server (' + e.message + '). Retrying automatically…');
+    // retry soon after a blip instead of waiting out the 60s interval
+    if (!retryTimer) retryTimer = setTimeout(function(){
+      retryTimer = null;
+      refresh(false);
+    }, 5000);
+  });
+}
+
+if (!KEY){
+  showErr('Missing key. Open this page with the full link including ?key=… (see token.txt next to server.py).');
+  document.getElementById('status').textContent = 'no key';
+} else {
+  refresh(true);
+  setInterval(function(){ refresh(false); }, 60000);
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden) refresh(false);
+  });
+}
+</script>
+</body>
+</html>
