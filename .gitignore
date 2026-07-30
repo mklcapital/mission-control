@@ -10,3 +10,6 @@ __pycache__/
 *.pyc
 .DS_Store
 *.bak*
+
+# Rust build artifacts (Cargo.lock is committed, per binary-crate convention)
+/target

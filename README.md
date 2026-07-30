@@ -50,6 +50,21 @@ python3 server.py
 #   http://localhost:8321/?key=<contents of token.txt>
 ```
 
+### Rust server (the direction of travel)
+
+The server is being reimplemented in Rust (`src/main.rs`, binary `mc-server`).
+It speaks the identical on-disk protocol (`token.txt`, `questions.json`,
+`answers.jsonl`, `.answers_cursor`, `.queue.lock`), so it serves the same
+`index.html` and interoperates with the `ask.py` / `answers.py` CLIs unchanged.
+
+```bash
+cargo run --release            # serves on 0.0.0.0:8321, same as server.py
+# run against a specific queue directory:
+#   MC_BASE=/path/to/dir cargo run --release
+```
+
+The Python files remain as the behavioral spec during the migration.
+
 Post a question (from an agent or your shell):
 
 ```bash
