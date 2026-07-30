@@ -5,11 +5,8 @@ edition = "2021"
 description = "Async human-in-the-loop decision queue — Rust reimplementation of the Python prototype"
 license = "MIT"
 
-# The binary is named `mc-server` so it reads clearly alongside the CLIs
-# (`ask`/`answers`) that will follow in later increments of the Rust port.
-[[bin]]
-name = "mc-server"
-path = "src/main.rs"
+# Binaries are auto-detected from src/bin/ (mc-server, ask, answers); shared
+# logic lives in the library crate (src/lib.rs).
 
 [dependencies]
 tiny_http = "0.12"
@@ -20,6 +17,7 @@ base64 = "0.22"
 getrandom = "0.2"
 fs2 = "0.4"
 constant_time_eq = "0.3"
+clap = { version = "4", features = ["derive"] }
 
 [profile.release]
 strip = true
