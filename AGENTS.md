@@ -19,10 +19,13 @@ Non-obvious notes for this environment:
 - End-to-end check: `ask.py` post → answer via the UI or
   `POST /api/answer?key=…` → `answers.py` prints it and advances the cursor.
 
-### Project direction: Rust/Swift only
+### Project direction (per maintainer)
 
-Per the maintainer: this Python app is a **prototype**. The long-term goal is to
-port everything to Rust (and Swift for any Apple-platform UI), targeting the
-latest iPhone/iPad/macOS technologies. Treat `server.py`/`ask.py`/`answers.py`
-as the behavioral spec for the Rust port; write new functionality in Rust/Swift
-with a short rationale for the language choice rather than extending the Python.
+- **This is a Linux server app and must be Rust only.** This Python
+  implementation is a **prototype** — treat `server.py` / `ask.py` /
+  `answers.py` as the behavioral spec for a Rust reimplementation; write new
+  functionality in Rust, not Python.
+- **Swift is only for genuinely native Apple client apps** (macOS / iPhone /
+  iPad / Apple Silicon viewers) that talk to this server — never for the server
+  itself. All heavy lifting, including GUI rendering, stays server-side and is
+  exposed over web tech (and optional Apple-native viewers/browsers).
