@@ -50,6 +50,31 @@ python3 server.py
 #   http://localhost:8321/?key=<contents of token.txt>
 ```
 
+### Rust (the direction of travel)
+
+The whole thing is being reimplemented in Rust. Shared logic lives in the
+library crate (`src/lib.rs`); three binaries live in `src/bin/`:
+
+| Binary | Replaces | Purpose |
+|---|---|---|
+| `mc-server` | `server.py` | the HTTP server (0.0.0.0:8321) |
+| `ask` | `ask.py` | post a question |
+| `answers` | `answers.py` | poll answers (cursor in `.answers_cursor`) |
+
+They speak the identical on-disk protocol (`token.txt`, `questions.json`,
+`answers.jsonl`, `.answers_cursor`, `.queue.lock`), so the Rust server serves
+the same `index.html` and the Rust and Python tools interoperate on one queue.
+
+```bash
+cargo build --release
+./target/release/mc-server                       # serve (same as server.py)
+./target/release/ask --project LOAN --type yesno --q "Rebooted yet?"
+./target/release/answers                         # poll new answers
+# MC_BASE=/path/to/dir selects a specific queue directory
+```
+
+The Python files remain as the behavioral spec during the migration.
+
 Post a question (from an agent or your shell):
 
 ```bash
